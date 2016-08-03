@@ -10,3 +10,4 @@
     exports.mail_server_port = 25;
     exports.logging_level = 'debug';
     exports.mongodb_connection_string = 'mongodb://localhost/email-relay-test';
+    exports.mail_server_ignore_tls = false;
