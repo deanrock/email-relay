@@ -5,7 +5,8 @@ var SMTPConnection = require('smtp-connection');
 var mongoose = require('mongoose');
 var winston = require('winston');
 var fs = require('fs');
-var assert = require('assert');
+var PassThrough = require('stream').PassThrough;
+var util = require('util');
 
 var config = require('./config');
 var Email = require('./models/Email');
@@ -61,7 +62,7 @@ var server = new SMTPServer({
         function saveEmail(callback) {
             callback();
 
-            winston.info('-> email from ' + email.remoteAddress + ' sent by ' + email.mailFrom + ' to ' + email.recipients + ' (err: ' + email.error +')');
+            winston.info('-> email with id ' + session.id + ' from ' + email.clientHostname + ' (' + email.remoteAddress + ') sent by ' + email.mailFrom + ' to ' + email.recipients + ' (err: ' + email.error +')');
 
             email.save(function (err) {
                 if (err) {
@@ -97,13 +98,29 @@ var server = new SMTPServer({
             ignoreTLS: config.mail_server_ignore_tls,
         });
 
+        var bufferStream = new PassThrough();
+
+        bufferStream.write(new Buffer(util.format(
+            'Received: from %s ([%s])\r\n\tby %s (%s) with ESMTP id %s;\r\n\t%s',
+            session.clientHostname,
+            session.remoteAddress,
+            'localhost',
+            config.smtp_banner,
+            session.id,
+            new Date().toUTCString()
+        )));
+
+        stream.on('data', function(chunk) {
+            bufferStream.write(chunk);
+        });
+
         connection.connect(function () {
             winston.debug('-> connected to upstream');
 
             connection.send({
                 from: session.envelope.mailFrom,
                 to: session.envelope.rcptTo,
-            }, stream, function (err, info) {
+            }, bufferStream, function (err, info) {
                 connection.quit();
 
                 if (err) {
@@ -139,6 +156,7 @@ var server = new SMTPServer({
 
         stream.on('end', function () {
             winston.debug('-> stream ended');
+            bufferStream.end();
         });
     }
 });
