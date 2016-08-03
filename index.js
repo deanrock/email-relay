@@ -94,6 +94,7 @@ var server = new SMTPServer({
         var connection = new SMTPConnection({
             port: config.mail_server_port,
             host: config.mail_server_host,
+            ignoreTLS: config.mail_server_ignore_tls,
         });
 
         connection.connect(function () {
