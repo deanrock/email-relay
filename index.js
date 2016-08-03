@@ -62,7 +62,7 @@ var server = new SMTPServer({
         function saveEmail(callback) {
             callback();
 
-            winston.info('-> email with id ' + session.id + ' from ' + email.clientHostname + ' (' + email.remoteAddress + ') sent by ' + email.mailFrom + ' to ' + email.recipients + ' (err: ' + email.error +')');
+            winston.info('-> email with id ' + session.id + ' from ' + session.clientHostname + ' (' + email.remoteAddress + ') sent by ' + email.mailFrom + ' to ' + email.recipients + ' (err: ' + email.error +')');
 
             email.save(function (err) {
                 if (err) {
@@ -101,8 +101,9 @@ var server = new SMTPServer({
         var bufferStream = new PassThrough();
 
         bufferStream.write(new Buffer(util.format(
-            'Received: from %s ([%s])\r\n\tby %s (%s) with ESMTP id %s;\r\n\t%s',
+            'Received: from %s (%s, [%s])\r\n\tby %s (%s) with ESMTP id %s;\r\n\t%s\r\n',
             session.clientHostname,
+            session.hostNameAppearsAs,
             session.remoteAddress,
             'localhost',
             config.smtp_banner,
